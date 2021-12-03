@@ -4,6 +4,7 @@ const chaiHttp = require("chai-http");
 const expect = chai.expect;
 chai.use(chaiHttp);
 
+// test not used, just a sample test
 describe("MOck API Test", () => {
   it("Should be successful if credentials are valid", (done) => {
     chai

@@ -8,23 +8,18 @@ const validateEmail = (mail) => {
   return false;
 };
 
-exports.test = (req, res) => {
-  console.log("test");
-  return res.json({ mesg: "test working" });
-};
 // Get specific wallet using an email address
 exports.getWallet = (req, res) => {
-  const id = req.id;
+  const _id = req.params.id;
 
   walletDB
-    .findById(id, "company_name email amount")
+    .findById(_id, "company_name email amount creation_time")
     .exec()
     .then((user) => {
-      console.log(user);
       return res.status(200).json({ status: " success", data: user });
     })
     .catch((err) => {
-      console.log(err);
+      return res.status(500).json({ status: "error", data: `${err}` });
     });
 };
 
@@ -79,12 +74,10 @@ exports.createWallet = (req, res) => {
           newUser
             .save()
             .then(() => {
-              return res
-                .status(200)
-                .json({
-                  status: "success",
-                  data: "Wallet successfully Created",
-                });
+              return res.status(200).json({
+                status: "success",
+                data: "Wallet successfully Created",
+              });
             })
             .catch((err) => {
               return res
@@ -127,24 +120,31 @@ exports.updateWallet = async (req, res) => {
     }
     // instance of the to be updated data
     const newData = {
-      name,
+      company_name: name,
       amount,
-      updated_time,
+      updated_time: new Date(),
     };
-    const response = await User.findByIdAndUpdate(id, newData, {
+    const response = await walletDB.findByIdAndUpdate(id, newData, {
       useFindAndModify: false,
       new: true,
     });
 
-    return res.status(201).json({
-      status: "success",
-      data: "User updated successfully",
-      user: response,
-    });
+    if (response) {
+      return res.status(201).json({
+        status: "success",
+        data: "User updated successfully",
+        //pick out what should return, passwords should not be returned
+        user: {
+          name: response.company_name,
+          email: response.email,
+          amount: response.amount,
+        },
+      });
+    }
   } catch (error) {
     return res
       .status(500)
-      .json({ status: "error", data: "Could not update,Try again." });
+      .json({ status: "error", data: `Could not update,Try again. ${error}` });
   }
 };
 
@@ -152,5 +152,81 @@ exports.updateWallet = async (req, res) => {
 exports.transferFunds = async (req, res) => {
   // we would be using email address as account number/id/address
   // first step is to be sure the sender exists and have the money they want to send
-  const { name, email, amountToBeSent } = req.body;
+  const { email, amountToBeSent, recipientEmail } = req.body;
+  try {
+    if (!email || !amountToBeSent || !recipientEmail) {
+      return res
+        .status(400)
+        .json({ status: "error", data: "Fields cannot be blank" });
+    }
+    const senderInfo = await walletDB.findOne({ email }).exec();
+    const recipientInfo = await walletDB
+      .findOne({ email: recipientEmail })
+      .exec();
+
+    if (senderInfo.email === email) {
+      if (recipientInfo.email === recipientEmail) {
+        //check if the sender has more than 50 in amount
+        if (senderInfo.amount < 50) {
+          return res
+            .status(403)
+            .json({ status: "error", data: "Insufficient funds" });
+        }
+        //check if the amount to be sent is above available balance
+        if (amountToBeSent > senderInfo.amount) {
+          return res
+            .status(400)
+            .json({ status: "error", data: "Insufficient funds, try again" });
+        }
+
+        // do some basic math to get balance
+        let balanceForSender =
+          Number(senderInfo.amount) - Number(amountToBeSent);
+        let recieverBalance =
+          parseInt(recipientInfo.amount) + parseInt(amountToBeSent);
+
+        //if the user has up to the amount he wants to send, update his remaining amount
+        let updatedSenderInfo = await walletDB.findOneAndUpdate(
+          { email: email },
+          { amount: balanceForSender },
+          {
+            new: true,
+          }
+        );
+
+        //update the recipient amount
+        let updatedRecipientInfo = await walletDB.findOneAndUpdate(
+          { email: recipientEmail },
+          { amount: recieverBalance },
+          {
+            new: true,
+          }
+        );
+
+        // send back the relevant info
+        return res.status(200).json({
+          status: "success",
+          data: {
+            name: updatedSenderInfo.company_name,
+            balance: updatedSenderInfo.amount,
+            amount_sent: amountToBeSent,
+            receiver_name: updatedRecipientInfo.company_name,
+            receiver_email: updatedRecipientInfo.email,
+          },
+        });
+      } else {
+        // if the flow gets to this block,it means the recipient does not have an account here
+        return res.status(400).json({
+          status: "error",
+          data: "Receiver does not exist,Invalid recipient",
+        });
+      }
+    } else {
+      return res.status(404).json({ status: "error", data: "Try again" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: "error", data: `Server error ${error}` });
+  }
 };
