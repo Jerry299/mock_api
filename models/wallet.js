@@ -7,7 +7,6 @@ const walletDB = new Schema({
   password: { type: String, required: true },
   amount: { type: Number, default: 0 },
   creation_date: { type: Date, default: new Date() },
-  update_time: { type: String },
 });
 
 module.exports = mongoose.model("walletDB", walletDB);

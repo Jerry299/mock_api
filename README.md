@@ -7,12 +7,14 @@ To get the Node server running locally:
 - Clone this repo
 - `npm install` to install all required dependencies
 - `npm run dev` to start the local server
+- `swagger to test API, start the server and goto http://localhost:5000/api-docs to test the API`
 
 ## Dependencies
 
 - [expressjs](https://github.com/expressjs/express) - The server for handling and routing HTTP requests
 - [Mongoose](https://mongoosejs.com/) - Elegant mongodb object modeling for node.js
 - [bcrypt](https://www.npmjs.com/package/bcrypt) - A library to help you hash passwords.
+- [Swagger UI](https://github.com/swagger-api/swagger-ui/) - API documentation
 - [Mocha](https://mochajs.org/) - Testing Suite
 - [Chai](https://www.chaijs.com/) - Test Assertion library
 - [Chai](https://www.chaijs.com/plugins/chai-http/) - Test Assertion library plugin for Http request

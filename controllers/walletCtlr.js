@@ -19,7 +19,7 @@ exports.getWallet = (req, res) => {
       return res.status(200).json({ status: " success", data: user });
     })
     .catch((err) => {
-      return res.status(500).json({ status: "error", data: `${err}` });
+      return res.status(500).json({ status: "error", data: `Invalid ID` });
     });
 };
 
@@ -73,10 +73,11 @@ exports.createWallet = (req, res) => {
           });
           newUser
             .save()
-            .then(() => {
+            .then((user) => {
               return res.status(200).json({
                 status: "success",
                 data: "Wallet successfully Created",
+                user,
               });
             })
             .catch((err) => {
@@ -122,7 +123,6 @@ exports.updateWallet = async (req, res) => {
     const newData = {
       company_name: name,
       amount,
-      updated_time: new Date(),
     };
     const response = await walletDB.findByIdAndUpdate(id, newData, {
       useFindAndModify: false,
@@ -216,17 +216,17 @@ exports.transferFunds = async (req, res) => {
         });
       } else {
         // if the flow gets to this block,it means the recipient does not have an account here
-        return res.status(400).json({
+        return res.status(404).json({
           status: "error",
           data: "Receiver does not exist,Invalid recipient",
         });
       }
     } else {
-      return res.status(404).json({ status: "error", data: "Try again" });
+      return res.status(400).json({ status: "error", data: "Try again" });
     }
   } catch (error) {
     return res
       .status(500)
-      .json({ status: "error", data: `Server error ${error}` });
+      .json({ status: "error", data: `Server error , Try again` });
   }
 };
