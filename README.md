@@ -1,6 +1,6 @@
 # mock_api
 
-# Getting started
+# Getting started, MAKE SURE YOU HAVE MONGO DB INSTALLED 
 
 To get the Node server running locally:
 
